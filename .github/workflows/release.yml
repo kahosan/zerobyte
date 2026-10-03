@@ -132,7 +132,8 @@ jobs:
           prerelease: true
 
   build-desktop:
-    needs: publish-release
+    needs: [build-images, determine-release-type]
+    if: needs.determine-release-type.outputs.release_type == 'release' || needs.determine-release-type.outputs.release_type == 'beta'
     permissions:
       actions: read
       contents: read
@@ -143,7 +144,7 @@ jobs:
     secrets: inherit
 
   publish-desktop-assets:
-    needs: build-desktop
+    needs: [build-desktop, publish-release]
     runs-on: ubuntu-latest
     permissions:
       attestations: write
