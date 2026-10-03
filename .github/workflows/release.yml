@@ -132,7 +132,7 @@ jobs:
           prerelease: true
 
   build-desktop:
-    needs: [build-images, determine-release-type]
+    needs: [determine-release-type, checks, e2e-tests, integration-tests]
     if: needs.determine-release-type.outputs.release_type == 'release' || needs.determine-release-type.outputs.release_type == 'beta'
     permissions:
       actions: read
