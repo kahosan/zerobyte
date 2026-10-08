@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -220,19 +221,25 @@ export const CreateRepositoryForm = ({
 									</SelectTrigger>
 								</FormControl>
 								<SelectContent>
-									{isBackendAllowed("local") && <SelectItem value="local">Local</SelectItem>}
-									{isBackendAllowed("s3") && <SelectItem value="s3">S3</SelectItem>}
-									{isBackendAllowed("r2") && <SelectItem value="r2">Cloudflare R2</SelectItem>}
+									{isBackendAllowed("local") && (
+										<SelectItem value="local">{backendLabels.local}</SelectItem>
+									)}
+									{isBackendAllowed("s3") && <SelectItem value="s3">{backendLabels.s3}</SelectItem>}
+									{isBackendAllowed("r2") && <SelectItem value="r2">{backendLabels.r2}</SelectItem>}
 									{isBackendAllowed("gcs") && (
-										<SelectItem value="gcs">Google Cloud Storage</SelectItem>
+										<SelectItem value="gcs">{backendLabels.gcs}</SelectItem>
 									)}
 									{isBackendAllowed("azure") && (
-										<SelectItem value="azure">Azure Blob Storage</SelectItem>
+										<SelectItem value="azure">{backendLabels.azure}</SelectItem>
 									)}
-									{isBackendAllowed("rest") && <SelectItem value="rest">REST Server</SelectItem>}
-									{isBackendAllowed("sftp") && <SelectItem value="sftp">SFTP</SelectItem>}
+									{isBackendAllowed("rest") && (
+										<SelectItem value="rest">{backendLabels.rest}</SelectItem>
+									)}
+									{isBackendAllowed("sftp") && (
+										<SelectItem value="sftp">{backendLabels.sftp}</SelectItem>
+									)}
 									{isBackendAllowed("rclone") && (
-										<SelectItem value="rclone">rclone (40+ cloud providers)</SelectItem>
+										<SelectItem value="rclone">{backendLabels.rclone}</SelectItem>
 									)}
 								</SelectContent>
 							</Select>

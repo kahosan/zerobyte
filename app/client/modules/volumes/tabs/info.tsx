@@ -6,19 +6,11 @@ import { Card, CardTitle } from "~/client/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/client/components/ui/chart";
 import type { StatFs, Volume } from "~/client/lib/types";
 import { cn } from "~/client/lib/utils";
+import { backendLabels } from "~/client/lib/backend-labels";
 
 type Props = {
 	volume: Volume;
 	statfs: StatFs;
-};
-
-const backendLabels: Record<Volume["type"], string> = {
-	directory: "Directory",
-	nfs: "NFS",
-	smb: "SMB",
-	webdav: "WebDAV",
-	rclone: "rclone",
-	sftp: "SFTP",
 };
 
 type ConfigRowProps = {

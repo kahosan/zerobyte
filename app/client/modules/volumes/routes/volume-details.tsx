@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
@@ -134,7 +135,7 @@ export function VolumeDetails({ volumeId }: { volumeId: string }) {
 										/>
 										{volume.status}
 									</Badge>
-									<Badge variant="secondary">{volume.type}</Badge>
+									<Badge variant="secondary">{backendLabels[volume.type]}</Badge>
 									{volume.provisioningId && <ManagedBadge />}
 								</div>
 								<p className="text-sm text-muted-foreground mt-0.5">

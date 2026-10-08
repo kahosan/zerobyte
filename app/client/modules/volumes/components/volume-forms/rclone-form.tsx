@@ -32,9 +32,9 @@ export const RcloneForm = ({ form }: Props) => {
 		return (
 			<Alert>
 				<AlertDescription className="space-y-2">
-					<p className="font-medium">No rclone remotes configured</p>
+					<p className="font-medium">No Rclone remotes configured</p>
 					<p className="text-sm text-muted-foreground">
-						To use rclone, you need to configure remotes on your host system
+						To use Rclone, you need to configure remotes on your host system
 					</p>
 					<a
 						href="https://rclone.org/docs/"
@@ -42,7 +42,7 @@ export const RcloneForm = ({ form }: Props) => {
 						rel="noopener noreferrer"
 						className="text-sm text-strong-accent inline-flex items-center gap-1"
 					>
-						View rclone documentation
+						View Rclone documentation
 						<ExternalLink className="w-3 h-3" />
 					</a>
 				</AlertDescription>
@@ -61,7 +61,7 @@ export const RcloneForm = ({ form }: Props) => {
 						<Select onValueChange={(v) => field.onChange(v)} value={field.value ?? ""}>
 							<FormControl>
 								<SelectTrigger>
-									<SelectValue placeholder="Select an rclone remote" />
+									<SelectValue placeholder="Select a Rclone remote" />
 								</SelectTrigger>
 							</FormControl>
 							<SelectContent>
@@ -78,7 +78,7 @@ export const RcloneForm = ({ form }: Props) => {
 								)}
 							</SelectContent>
 						</Select>
-						<FormDescription>Select the rclone remote configured on your host system.</FormDescription>
+						<FormDescription>Select the Rclone remote configured on your host system.</FormDescription>
 						<FormMessage />
 					</FormItem>
 				)}

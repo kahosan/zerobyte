@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { Archive, Clock, FolderOpen, HardDrive, Lock, Settings, Shield } from "lucide-react";
 import { Card, CardContent, CardTitle } from "~/client/components/ui/card";
 import type { Repository } from "~/client/lib/types";
@@ -61,7 +62,7 @@ export const RepositoryInfoTabContent = ({ repository, initialStats, isDoctorRun
 						</div>
 						<div className="flex flex-col gap-1">
 							<div className="text-sm font-medium text-muted-foreground">Backend</div>
-							<p className="text-sm">{repository.type}</p>
+							<p className="text-sm">{backendLabels[repository.type]}</p>
 						</div>
 						<div className="flex flex-col gap-1">
 							<div className="text-sm font-medium text-muted-foreground">Management</div>
@@ -100,7 +101,11 @@ export const RepositoryInfoTabContent = ({ repository, initialStats, isDoctorRun
 					Configuration
 				</CardTitle>
 				<div className="space-y-0 divide-y divide-border/50">
-					<ConfigRow icon={<HardDrive className="h-4 w-4" />} label="Backend" value={repository.type} />
+					<ConfigRow
+						icon={<HardDrive className="h-4 w-4" />}
+						label="Backend"
+						value={backendLabels[repository.type]}
+					/>
 					{hasLocalPath && (
 						<ConfigRow
 							icon={<FolderOpen className="h-4 w-4" />}

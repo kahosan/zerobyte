@@ -33,6 +33,7 @@ import { Separator } from "~/client/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/client/components/ui/tabs";
 import { parseError } from "~/client/lib/errors";
 import { cn } from "~/client/lib/utils";
+import { backendLabels } from "~/client/lib/backend-labels";
 import type { BackupSchedule, Snapshot } from "~/client/lib/types";
 import type { GetRepositoryStatsResponse } from "~/client/api-client/types.gen";
 import { useRepositoryDoctorTask } from "../doctor-tasks";
@@ -134,7 +135,7 @@ export default function RepositoryDetailsPage({
 										/>
 										{displayStatus || "Unknown"}
 									</Badge>
-									<Badge variant="secondary">{repository.type}</Badge>
+									<Badge variant="secondary">{backendLabels[repository.type]}</Badge>
 									{repository.provisioningId && <Badge variant="secondary">Managed</Badge>}
 								</div>
 								<p className="text-sm text-muted-foreground mt-0.5">

@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Copy, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -187,8 +188,8 @@ export const ScheduleMirrorsConfig = ({ scheduleShortId, primaryRepositoryId, re
 																className="h-4 w-4"
 															/>
 															<span>{repository.name}</span>
-															<span className="text-xs uppercase text-muted-foreground">
-																({repository.type})
+															<span className="text-xs text-muted-foreground">
+																({backendLabels[repository.type]})
 															</span>
 														</div>
 													</SelectItem>

@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
 	createColumnHelper,
@@ -140,12 +141,12 @@ export function VolumesPage() {
 							<SelectValue placeholder="All backends" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="directory">Directory</SelectItem>
-							<SelectItem value="nfs">NFS</SelectItem>
-							<SelectItem value="smb">SMB</SelectItem>
-							<SelectItem value="webdav">WebDAV</SelectItem>
-							<SelectItem value="sftp">SFTP</SelectItem>
-							<SelectItem value="rclone">rclone</SelectItem>
+							<SelectItem value="directory">{backendLabels.directory}</SelectItem>
+							<SelectItem value="nfs">{backendLabels.nfs}</SelectItem>
+							<SelectItem value="smb">{backendLabels.smb}</SelectItem>
+							<SelectItem value="webdav">{backendLabels.webdav}</SelectItem>
+							<SelectItem value="sftp">{backendLabels.sftp}</SelectItem>
+							<SelectItem value="rclone">{backendLabels.rclone}</SelectItem>
 						</SelectContent>
 					</Select>
 					{hasFilters && (

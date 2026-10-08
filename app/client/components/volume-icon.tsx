@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { Cloud, Folder, Server } from "lucide-react";
 import type { BackendType } from "@zerobyte/contracts/volumes";
 
@@ -10,32 +11,32 @@ const getIconAndLabel = (backend: BackendType) => {
 		case "directory":
 			return {
 				icon: Folder,
-				label: "Directory",
+				label: backendLabels.directory,
 			};
 		case "nfs":
 			return {
 				icon: Server,
-				label: "NFS",
+				label: backendLabels.nfs,
 			};
 		case "smb":
 			return {
 				icon: Server,
-				label: "SMB",
+				label: backendLabels.smb,
 			};
 		case "webdav":
 			return {
 				icon: Server,
-				label: "WebDAV",
+				label: backendLabels.webdav,
 			};
 		case "rclone":
 			return {
 				icon: Cloud,
-				label: "Rclone",
+				label: backendLabels.rclone,
 			};
 		case "sftp":
 			return {
 				icon: Server,
-				label: "SFTP",
+				label: backendLabels.sftp,
 			};
 		default:
 			return {

@@ -23,6 +23,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { RepositoryBackend } from "@zerobyte/core/restic";
 import { useCookieState } from "~/client/hooks/use-cookie-state";
 import { dataTableFeatures } from "~/client/lib/data-table";
+import { backendLabels } from "~/client/lib/backend-labels";
 
 type RepositoryRow = {
 	id: string;
@@ -52,7 +53,7 @@ const repositoryColumns = repositoryColumnHelper.columns([
 		cell: ({ row }) => (
 			<span className="flex items-center gap-2 text-muted-foreground">
 				<RepositoryIcon backend={row.original.type} />
-				{row.original.type}
+				{backendLabels[row.original.type]}
 			</span>
 		),
 		filterFn: (row, id, value) => row.getValue(id) === value,
@@ -164,10 +165,10 @@ export function RepositoriesPage() {
 							<SelectValue placeholder="All backends" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="local">Local</SelectItem>
-							<SelectItem value="sftp">SFTP</SelectItem>
-							<SelectItem value="s3">S3</SelectItem>
-							<SelectItem value="gcs">Google Cloud Storage</SelectItem>
+							<SelectItem value="local">{backendLabels.local}</SelectItem>
+							<SelectItem value="sftp">{backendLabels.sftp}</SelectItem>
+							<SelectItem value="s3">{backendLabels.s3}</SelectItem>
+							<SelectItem value="gcs">{backendLabels.gcs}</SelectItem>
 						</SelectContent>
 					</Select>
 					{hasFilters && (

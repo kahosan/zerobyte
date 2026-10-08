@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, Loader2, Plug, Save, XCircle } from "lucide-react";
@@ -199,16 +200,22 @@ export const CreateVolumeForm = ({ onSubmit, mode = "create", initialValues, for
 										</FormControl>
 										<SelectContent>
 											{isBackendAllowed("directory") && (
-												<SelectItem value="directory">Directory</SelectItem>
+												<SelectItem value="directory">{backendLabels.directory}</SelectItem>
 											)}
-											{isBackendAllowed("nfs") && <SelectItem value="nfs">NFS</SelectItem>}
-											{isBackendAllowed("smb") && <SelectItem value="smb">SMB</SelectItem>}
+											{isBackendAllowed("nfs") && (
+												<SelectItem value="nfs">{backendLabels.nfs}</SelectItem>
+											)}
+											{isBackendAllowed("smb") && (
+												<SelectItem value="smb">{backendLabels.smb}</SelectItem>
+											)}
 											{isBackendAllowed("webdav") && (
-												<SelectItem value="webdav">WebDAV</SelectItem>
+												<SelectItem value="webdav">{backendLabels.webdav}</SelectItem>
 											)}
-											{isBackendAllowed("sftp") && <SelectItem value="sftp">SFTP</SelectItem>}
+											{isBackendAllowed("sftp") && (
+												<SelectItem value="sftp">{backendLabels.sftp}</SelectItem>
+											)}
 											{isBackendAllowed("rclone") && (
-												<SelectItem value="rclone">rclone</SelectItem>
+												<SelectItem value="rclone">{backendLabels.rclone}</SelectItem>
 											)}
 										</SelectContent>
 									</Select>

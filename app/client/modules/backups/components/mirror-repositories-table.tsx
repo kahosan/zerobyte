@@ -1,3 +1,4 @@
+import { backendLabels } from "~/client/lib/backend-labels";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Copy, RefreshCw, Trash2 } from "lucide-react";
@@ -203,7 +204,7 @@ export const MirrorRepositoriesTable = ({
 													<span className="font-medium">{repository.name}</span>
 												</Link>
 												<Badge variant="outline" className="text-[10px] align-middle">
-													{repository.type}
+													{backendLabels[repository.type]}
 												</Badge>
 											</div>
 										</TableCell>
