@@ -1,8 +1,8 @@
-import { LifeBuoy, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { type AppContext } from "~/context";
 import { GridBackground } from "./grid-background";
-import { Button, buttonVariants } from "./ui/button";
+import { Button } from "./ui/button";
 import { SidebarProvider, SidebarTrigger } from "./ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { authClient } from "../lib/auth-client";

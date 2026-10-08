@@ -87,13 +87,45 @@ test.each([
 	});
 });
 
-test.each(["dev", "invalid-version"])("does not offer updates for app version %s", async (currentVersion) => {
-	setup([release("v0.44.0", true), release("v0.43.1")], currentVersion);
+test.each(["dev", "invalid-version", `sha-${"a".repeat(40)}`])(
+	"does not offer updates for app version %s",
+	async (currentVersion) => {
+		setup([release("v0.44.0", true), release("v0.43.1")], currentVersion);
+
+		expect(await systemService.getUpdates()).toEqual({
+			currentVersion,
+			latestVersion: "v0.43.1",
+			hasUpdate: false,
+			missedReleases: [],
+		});
+	},
+);
+
+test("does not offer the upstream base release as an update for a fork build", async () => {
+	setup([release("v0.43.0")], "v0.43.0+kf.1");
 
 	expect(await systemService.getUpdates()).toEqual({
-		currentVersion,
-		latestVersion: "v0.43.1",
+		currentVersion: "v0.43.0+kf.1",
+		latestVersion: "v0.43.0",
 		hasUpdate: false,
 		missedReleases: [],
+	});
+});
+
+test("still reports newer upstream releases for a fork build", async () => {
+	setup([release("v0.43.1"), release("v0.43.0")], "v0.43.0+kf.2");
+
+	expect(await systemService.getUpdates()).toEqual({
+		currentVersion: "v0.43.0+kf.2",
+		latestVersion: "v0.43.1",
+		hasUpdate: true,
+		missedReleases: [
+			{
+				version: "v0.43.1",
+				url: "https://github.com/nicotsx/zerobyte/releases/tag/v0.43.1",
+				publishedAt: "2026-03-26T12:00:00Z",
+				body: "Release notes for v0.43.1",
+			},
+		],
 	});
 });

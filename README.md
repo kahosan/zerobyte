@@ -45,12 +45,14 @@ It contains up-to-date setup guides, configuration reference, and usage document
 
 ## Installation
 
+This fork publishes Linux images to `ghcr.io/kahosan/zerobyte`. See [Publishing Linux container images](.github/PUBLISHING.md) for Actions setup, `-kf.N` version tags, and manual builds. The examples below use `latest`; pin a published `vX.Y.Z-kf.N` tag for a specific release.
+
 In order to run Zerobyte, you need to have Docker and Docker Compose installed on your server. Then, you can use the provided `compose.yaml` file to start the application.
 
 ```yaml
 services:
   zerobyte:
-    image: ghcr.io/nicotsx/zerobyte:v0.43
+    image: ghcr.io/kahosan/zerobyte:latest
     container_name: zerobyte
     restart: unless-stopped
     cap_add:
@@ -175,7 +177,7 @@ If you only need to back up locally-mounted folders and don't require remote sha
 ```yaml
 services:
   zerobyte:
-    image: ghcr.io/nicotsx/zerobyte:v0.43
+    image: ghcr.io/kahosan/zerobyte:latest
     container_name: zerobyte
     restart: unless-stopped
     ports:
@@ -214,7 +216,7 @@ If you want to backup a local directory on the same host where Zerobyte is runni
 ```diff
 services:
   zerobyte:
-    image: ghcr.io/nicotsx/zerobyte:v0.43
+    image: ghcr.io/kahosan/zerobyte:latest
     container_name: zerobyte
     restart: unless-stopped
     cap_add:
@@ -289,7 +291,7 @@ Zerobyte can use [rclone](https://rclone.org/) to support 40+ cloud storage prov
    ```diff
    services:
      zerobyte:
-       image: ghcr.io/nicotsx/zerobyte:v0.43
+       image: ghcr.io/kahosan/zerobyte:latest
        container_name: zerobyte
        restart: unless-stopped
        cap_add:

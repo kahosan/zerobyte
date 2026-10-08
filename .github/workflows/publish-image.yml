@@ -1,0 +1,137 @@
+name: Publish Linux Image
+
+on:
+  push:
+    tags:
+      - "v*-kf.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize publications so simultaneous builds cannot race to update latest.
+concurrency:
+  group: publish-linux-image
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      image: ${{ steps.version.outputs.image }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      image_tag: ${{ steps.version.outputs.image_tag }}
+      is_release: ${{ steps.version.outputs.is_release }}
+    steps:
+      - name: Determine image version
+        id: version
+        shell: bash
+        run: |
+          image_tag="sha-${GITHUB_SHA}"
+          app_version="$image_tag"
+          is_release=false
+
+          # Manual builds always use SHA tags, even when a release tag is selected.
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            version_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-kf\.([1-9][0-9]*)$'
+            if [[ "$GITHUB_REF_TYPE" != "tag" || ! "$GITHUB_REF_NAME" =~ $version_pattern || ${#GITHUB_REF_NAME} -gt 128 ]]; then
+              echo "::error::Release tags must look like v0.43.0-kf.1 (no leading zeros, revision starts at 1)."
+              exit 1
+            fi
+
+            image_tag="$GITHUB_REF_NAME"
+            app_version="${image_tag/-kf./+kf.}"
+            is_release=true
+          fi
+
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: prepare
+    uses: ./.github/workflows/checks.yml
+
+  e2e-tests:
+    needs: prepare
+    uses: ./.github/workflows/e2e.yml
+
+  integration-tests:
+    needs: prepare
+    uses: ./.github/workflows/integration.yml
+
+  publish:
+    needs: [prepare, checks, e2e-tests, integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        with:
+          images: ${{ needs.prepare.outputs.image }}
+          tags: |
+            type=raw,value=sha-${{ github.sha }}
+            type=raw,value=${{ needs.prepare.outputs.image_tag }}
+            type=raw,value=latest,enable=${{ needs.prepare.outputs.is_release == 'true' }}
+          flavor: |
+            latest=false
+          labels: |
+            org.opencontainers.image.version=${{ needs.prepare.outputs.app_version }}
+
+      - name: Build and push Linux image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ needs.prepare.outputs.app_version }}
+          cache-from: type=gha,scope=linux-image
+          cache-to: type=gha,mode=max,scope=linux-image
+
+      - name: Write image summary
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          IMAGE_NAME: ${{ needs.prepare.outputs.image }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          APP_VERSION: ${{ needs.prepare.outputs.app_version }}
+        run: |
+          {
+            echo 'Published Linux image (AMD64 and ARM64):'
+            echo '```text'
+            printf '%s\n' "$IMAGE_TAGS"
+            echo '```'
+            printf '\nApplication version: `%s`\n' "$APP_VERSION"
+            printf '\nDigest: `%s@%s`\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"

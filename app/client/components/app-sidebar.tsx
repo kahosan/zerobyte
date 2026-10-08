@@ -39,7 +39,7 @@ import {
 	type SettingsScope,
 } from "~/client/modules/settings/settings-scope";
 import { cn } from "~/client/lib/utils";
-import { APP_VERSION, RCLONE_VERSION, RESTIC_VERSION, SHOUTRRR_VERSION } from "~/client/lib/version";
+import { APP_VERSION, getVersionUrl, RCLONE_VERSION, RESTIC_VERSION, SHOUTRRR_VERSION } from "~/client/lib/version";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { ReleaseNotesDialog } from "./release-notes-dialog";
 
@@ -83,11 +83,11 @@ export function AppSidebar() {
 	const activeSettingsScope = getActiveSettingsScope(location.search, scopeAvailability);
 	const visibleSettingsItems = getVisibleSettingsScopeNavigationItems(scopeAvailability);
 
-	const displayVersion = APP_VERSION.startsWith("v") || APP_VERSION === "dev" ? APP_VERSION : `v${APP_VERSION}`;
-	const releaseUrl =
-		APP_VERSION === "dev"
-			? "https://github.com/nicotsx/zerobyte"
-			: `https://github.com/nicotsx/zerobyte/releases/tag/${displayVersion}`;
+	const displayVersion =
+		APP_VERSION.startsWith("v") || APP_VERSION.startsWith("sha-") || APP_VERSION === "dev"
+			? APP_VERSION
+			: `v${APP_VERSION}`;
+	const releaseUrl = getVersionUrl(APP_VERSION);
 	const availableVersion = updates?.latestVersion ?? "New version";
 	const versionStatus = hasUpdate ? `${availableVersion} available` : "Up to date";
 	const versionCheckStatus = updatesError ? "Last check failed" : versionStatus;
