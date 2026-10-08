@@ -1,4 +1,5 @@
 import type { RepositoryConfig } from "@zerobyte/core/restic";
+import { resolveRepositoryPassword } from "@zerobyte/core/restic/server";
 import type { RestoreRunPayload } from "@zerobyte/contracts/agent-protocol";
 import type { TaskResult } from "~/schemas/tasks";
 import { repoMutex } from "../../../core/repository-mutex";
@@ -33,8 +34,11 @@ type RestoreExecutionRequest = RestoreCommandParams & {
 type RestoreTaskResult = Extract<TaskResult, { kind: "restore" }>;
 
 const createRestoreRunPayload = async (request: RestoreExecutionRequest): Promise<RestoreRunPayload> => {
-	const encryptedResticPassword = await resticDeps.getOrganizationResticPassword(request.organizationId);
-	const resticPassword = await resticDeps.resolveSecret(encryptedResticPassword);
+	const resticPassword = await resolveRepositoryPassword(
+		request.repositoryConfig,
+		request.organizationId,
+		resticDeps,
+	);
 
 	return {
 		restoreId: request.restoreId,

@@ -21,6 +21,7 @@ import type { ResticDeps } from "./types";
 
 export { addCommonArgs } from "./helpers/add-common-args";
 export { buildEnv } from "./helpers/build-env";
+export { resolveRepositoryPassword } from "./helpers/resolve-repository-password";
 export { buildRepoUrl } from "./helpers/build-repo-url";
 export { cleanupTemporaryKeys } from "./helpers/cleanup-temporary-keys";
 export { validateCustomResticParams } from "./helpers/validate-custom-params";

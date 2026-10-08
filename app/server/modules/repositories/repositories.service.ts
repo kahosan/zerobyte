@@ -708,6 +708,15 @@ const updateRepository = async (shortId: ShortId, updates: UpdateRepositoryBody)
 	}
 
 	const decryptedExisting = await decryptRepositoryConfig(existingConfig);
+	if (updates.config && !existingConfig.isExistingRepository) {
+		const decryptedNext = await decryptRepositoryConfig(parsedConfig);
+		if (
+			parsedConfig.isExistingRepository ||
+			(decryptedNext.customPassword || undefined) !== (decryptedExisting.customPassword || undefined)
+		) {
+			throw new BadRequestError("Changing this repository's encryption password is not supported here");
+		}
+	}
 	const configChanged = updates.config && JSON.stringify(decryptedExisting) !== JSON.stringify(parsedConfig);
 	const encryptedConfig = updates.config ? await encryptRepositoryConfig(parsedConfig) : existingConfig;
 	const resolvedCompressionMode = updates.compressionMode ?? existing.compressionMode;

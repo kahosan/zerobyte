@@ -11,7 +11,9 @@ import {
 	parseConfigTransferPayload,
 } from "../payload";
 import { configTransferPayloadV1Schema } from "../v1/payload";
-import { loadPayload } from "./config-transfer-test-helpers";
+import { loadPayload, loadPayloadV2 } from "./config-transfer-test-helpers";
+import { decodeConfigTransferPayloadV2, encodeConfigTransferPayloadV2 } from "../v2/codec";
+import { configTransferPayloadV2Schema } from "../v2/payload";
 
 type CurrentEncodedModel = Omit<ReturnType<typeof encodeCurrentConfigTransferPayload>, "version">;
 
@@ -146,6 +148,34 @@ const createVariantCoveragePayload = (): ConfigTransferModel => ({
 });
 
 describe("config transfer payload graph", () => {
+	test("round-trips the frozen v2 fixture with a new repository's independent password", async () => {
+		const fixture = await loadPayloadV2();
+		const model = decodeConfigTransferPayloadV2(configTransferPayloadV2Schema.parse(fixture));
+		expect(encodeConfigTransferPayloadV2(model)).toEqual(fixture);
+		expect(encodeCurrentConfigTransferPayload(parseConfigTransferPayload(fixture))).toEqual(fixture);
+		expect(model.repositories[0].config.customPassword).toBe("fixture-independent-password");
+	});
+
+	test.each([false, undefined])(
+		"preserves v1's organization password when isExistingRepository is %s",
+		async (isExistingRepository) => {
+			const fixture = await loadPayload();
+			fixture.repositories[0].config.isExistingRepository = isExistingRepository;
+			const model = parseConfigTransferPayload(fixture);
+			expect(model.repositories[0].config.customPassword).toBeUndefined();
+			expect(model.resticPassword).toBe(fixture.resticPassword);
+			expect(fixture.repositories[0].config.customPassword).toBe("fixture-primary-password");
+		},
+	);
+
+	test("preserves independent passwords on imported v1 repositories", async () => {
+		const fixture = await loadPayload();
+		fixture.repositories[0].config.isExistingRepository = true;
+		expect(parseConfigTransferPayload(fixture).repositories[0].config.customPassword).toBe(
+			"fixture-primary-password",
+		);
+	});
+
 	test("requires a wire contract update when the current transfer model changes", () => {
 		expectTypeOf<CurrentEncodedModel>().toEqualTypeOf<ConfigTransferModel>();
 	});

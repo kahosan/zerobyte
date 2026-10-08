@@ -10,7 +10,7 @@ import * as context from "~/server/core/request-context";
 import * as spawnModule from "@zerobyte/core/node";
 import type { SafeSpawnParams } from "@zerobyte/core/node";
 import { logger } from "@zerobyte/core/node";
-import { restic } from "~/server/core/restic";
+import { restic, resticDeps } from "~/server/core/restic";
 import { NotFoundError } from "http-errors-enhanced";
 import { fromAny } from "@total-typescript/shoehorn";
 import { scheduleQueries } from "../backups.queries";
@@ -517,6 +517,29 @@ describe("backup execution - validation failures", () => {
 				current_files: ["later.txt"],
 			},
 		});
+	});
+
+	test("sends a new repository's independent password to the backup agent", async () => {
+		const { runBackupMock } = setup();
+		const volume = await createTestVolume();
+		const repository = await createTestRepository({
+			config: { backend: "local", path: "/tmp/repo", customPassword: "independent-password" },
+		});
+		const schedule = await createTestBackupSchedule({ volumeId: volume.id, repositoryId: repository.id });
+		const organizationPassword = vi
+			.spyOn(resticDeps, "getOrganizationResticPassword")
+			.mockRejectedValue(new Error("Organization key unavailable"));
+		await backupsService.executeBackup(schedule.id);
+		await waitForExpect(() =>
+			expect(runBackupMock).toHaveBeenCalledWith(
+				"local",
+				expect.objectContaining({
+					payload: expect.objectContaining({ runtime: { password: "independent-password" } }),
+				}),
+			),
+		);
+		expect(organizationPassword).not.toHaveBeenCalled();
+		await waitForBackupTaskStatus(schedule.id, "succeeded");
 	});
 
 	test("passes configured backup webhooks to the backup agent", async () => {

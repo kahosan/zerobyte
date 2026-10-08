@@ -42,6 +42,12 @@ export const loadEncryptedConfig = async () => {
 	return (await readFile(new URL("../../__fixtures__/config-transfer/v1-full.zbex", import.meta.url), "utf8")).trim();
 };
 
+export const loadPayloadV2 = async () => {
+	return JSON.parse(
+		await readFile(new URL("../../__fixtures__/config-transfer/v2-full.payload.json", import.meta.url), "utf8"),
+	);
+};
+
 export const encryptPayload = (payload: unknown) => encryptConfig(JSON.stringify(payload), fixturePassphrase);
 
 export const allowConfigExportPassword = () => {

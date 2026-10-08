@@ -12,6 +12,7 @@ import {
 	fixturePassphrase,
 	encryptPayload,
 	loadPayload,
+	loadPayloadV2,
 	loadEncryptedConfig,
 	requestConfigExport,
 	requestConfigImport,
@@ -34,6 +35,21 @@ afterEach(() => {
 });
 
 describe("configuration import", () => {
+	test("imports the v2 fixture and seals a new repository's independent password", async () => {
+		const fixture = await loadPayloadV2();
+		const targetSession = await createTestSession();
+		const response = await requestConfigImport(targetSession.headers, await encryptPayload(fixture));
+		expect(response.status).toBe(200);
+		const repository = await db.query.repositoriesTable.findFirst({
+			where: { organizationId: targetSession.organizationId, name: "Fixture Primary Repository" },
+		});
+		expect(repository?.config.isExistingRepository).toBe(false);
+		expect(repository?.config.customPassword).toMatch(/^encv1:/);
+		expect(await cryptoUtils.resolveSecret(repository!.config.customPassword!)).toBe(
+			"fixture-independent-password",
+		);
+	});
+
 	test("imports the frozen v1 fixture", async () => {
 		config.runtime = "desktop";
 		const encryptedConfig = await loadEncryptedConfig();
@@ -72,7 +88,7 @@ describe("configuration import", () => {
 				expect.objectContaining({
 					name: "Fixture Primary Repository",
 					compressionMode: "max",
-					config: expect.objectContaining({ customPassword: "fixture-primary-password" }),
+					config: expect.not.objectContaining({ customPassword: expect.any(String) }),
 				}),
 			]),
 		);
@@ -103,7 +119,7 @@ describe("configuration import", () => {
 		const storedOrganization = await db.query.organization.findFirst({
 			where: { id: targetSession.organizationId },
 		});
-		expect(storedPrimaryRepository?.config.customPassword).toMatch(/^encv1:/);
+		expect(storedPrimaryRepository?.config.customPassword).toBeUndefined();
 		expect(storedPrimaryRepository?.autoCheckEnabled).toBe(true);
 		expect(storedOrganization?.metadata?.resticPassword).toMatch(/^encv1:/);
 		expect(storedOrganization?.recoveryKeyExportedAt).toBeInstanceOf(Date);

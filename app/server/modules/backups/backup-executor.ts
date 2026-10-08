@@ -1,4 +1,5 @@
 import { runBackupLifecycle } from "@zerobyte/core/backup-hooks";
+import { resolveRepositoryPassword } from "@zerobyte/core/restic/server";
 import type { BackupSchedule, Volume, Repository } from "../../db/schema";
 import { config } from "../../core/config";
 import { restic, resticDeps } from "../../core/restic";
@@ -46,8 +47,7 @@ const createBackupRunPayload = async ({
 	const customResticParams = schedule.customResticParams ?? [];
 
 	const repositoryConfig = await decryptRepositoryConfig(repository.config);
-	const encryptedResticPassword = await resticDeps.getOrganizationResticPassword(organizationId);
-	const resticPassword = await resticDeps.resolveSecret(encryptedResticPassword);
+	const resticPassword = await resolveRepositoryPassword(repository.config, organizationId, resticDeps);
 
 	return {
 		jobId,

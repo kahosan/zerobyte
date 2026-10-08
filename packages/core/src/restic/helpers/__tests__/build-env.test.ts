@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import os from "node:os";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { buildEnv } from "../build-env";
 import type { ResticDeps } from "../../types";
 
@@ -68,6 +68,27 @@ describe("buildEnv", () => {
 	});
 
 	describe("password resolution", () => {
+		test.each([false, undefined, true])(
+			"uses an independent password when isExistingRepository is %s",
+			async (isExistingRepository) => {
+				const getOrganizationResticPassword = vi.fn(async () => {
+					throw new Error("Organization key unavailable");
+				});
+				const deps = makeDeps({
+					getOrganizationResticPassword,
+					resolveSecret: async (secret) => (secret === "sealed-password" ? "independent-password" : secret),
+				});
+				const env = await buildEnvForTest(
+					{ backend: "local", path: "/tmp/repo", isExistingRepository, customPassword: "sealed-password" },
+					"org-1",
+					deps,
+				);
+				expect(await fs.readFile(env.RESTIC_PASSWORD_FILE!, "utf8")).toBe("independent-password");
+				expect((await fs.stat(env.RESTIC_PASSWORD_FILE!)).mode & 0o777).toBe(0o600);
+				expect(getOrganizationResticPassword).not.toHaveBeenCalled();
+			},
+		);
+
 		test("writes a password file when using customPassword on an existing repository", async () => {
 			const env = await buildEnvForTest(
 				{

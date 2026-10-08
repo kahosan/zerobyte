@@ -13,7 +13,9 @@ import { withContext } from "~/server/core/request-context";
 import { db } from "~/server/db/db";
 import { agentsTable, repositoriesTable, type RepositoryInsert } from "~/server/db/schema";
 import { generateShortId } from "~/server/utils/id";
-import { restic } from "~/server/core/restic";
+import { restic, resticDeps } from "~/server/core/restic";
+import { cryptoUtils } from "~/server/utils/crypto";
+import { eq } from "drizzle-orm";
 import { agentManager, type RestoreExecutionResult } from "~/server/modules/agents/agents-manager";
 import { createTestSession } from "~/test/helpers/auth";
 import { createTestBackupSchedule } from "~/test/helpers/backup";
@@ -79,6 +81,26 @@ describe("repositoriesService.createRepository", () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	test("encrypts an independent password before storing and initializing a new repository", async () => {
+		const actual = await vi.importActual<typeof import("~/server/utils/crypto")>("~/server/utils/crypto");
+		vi.spyOn(cryptoUtils, "sealSecret").mockImplementation(actual.cryptoUtils.sealSecret);
+		const result = await withContext({ organizationId: session.organizationId, userId: session.user.id }, () =>
+			repositoriesService.createRepository("Independent repo", {
+				backend: "local",
+				path: REPOSITORY_BASE,
+				customPassword: "my-independent-password",
+			}),
+		);
+		expect(result.repository.config.customPassword).toMatch(/^encv1:/);
+		expect(await actual.cryptoUtils.resolveSecret(result.repository.config.customPassword!)).toBe(
+			"my-independent-password",
+		);
+		expect(initMock).toHaveBeenCalledWith(
+			expect.objectContaining({ customPassword: result.repository.config.customPassword }),
+			expect.any(Object),
+		);
 	});
 
 	test("creates a shortId-scoped repository path when using the repository base directory", async () => {
@@ -216,6 +238,34 @@ describe("repositoriesService.createRepository", () => {
 });
 
 describe("repositoriesService.updateRepository", () => {
+	test("preserves a new repository's password when editing other settings", async () => {
+		const repository = await createTestRepository(session.organizationId, {
+			config: { backend: "local", path: "/tmp/repo", customPassword: "independent-password" },
+		});
+		const result = await withContext({ organizationId: session.organizationId, userId: session.user.id }, () =>
+			repositoriesService.updateRepository(repository.shortId, {
+				config: { ...repository.config, uploadLimit: { enabled: true, value: 10, unit: "Mbps" } },
+			}),
+		);
+		expect(result.repository.config.customPassword).toBe("independent-password");
+	});
+
+	test.each([undefined, "replacement-password"])(
+		"rejects replacing a new repository's password with %s",
+		async (customPassword) => {
+			const repository = await createTestRepository(session.organizationId, {
+				config: { backend: "local", path: "/tmp/repo", customPassword: "independent-password" },
+			});
+			await expect(
+				withContext({ organizationId: session.organizationId, userId: session.user.id }, () =>
+					repositoriesService.updateRepository(repository.shortId, {
+						config: { ...repository.config, customPassword },
+					}),
+				),
+			).rejects.toThrow("Changing this repository's encryption password is not supported here");
+		},
+	);
+
 	test("normalizes repository names and rejects explicit empty updates", async () => {
 		const repository = await createTestRepository(session.organizationId);
 
@@ -822,6 +872,35 @@ describe("repositoriesService.restoreSnapshot", () => {
 		).rejects.toThrow("Restore target path is not allowed");
 
 		expect(restoreMock).not.toHaveBeenCalled();
+	});
+
+	test("sends an independent repository password to the restore agent without accessing the organization key", async () => {
+		const { organizationId, userId, repositoryId, repositoryShortId, restoreMock } =
+			await setupRestoreSnapshotScenario();
+		await db
+			.update(repositoriesTable)
+			.set({ config: { backend: "local", path: "/tmp/repo", customPassword: "independent-password" } })
+			.where(eq(repositoriesTable.id, repositoryId));
+		const organizationPassword = vi
+			.spyOn(resticDeps, "getOrganizationResticPassword")
+			.mockRejectedValue(new Error("Organization key unavailable"));
+		const targetPath = await fs.mkdtemp(nodePath.join(process.cwd(), "restore-target-"));
+		try {
+			await withContext({ organizationId, userId }, () =>
+				repositoriesService.restoreSnapshot(repositoryShortId, "snapshot-restore", { targetPath }),
+			);
+			await waitForExpect(() =>
+				expect(restoreMock).toHaveBeenCalledWith(
+					"local",
+					expect.objectContaining({
+						payload: expect.objectContaining({ runtime: { password: "independent-password" } }),
+					}),
+				),
+			);
+			expect(organizationPassword).not.toHaveBeenCalled();
+		} finally {
+			await fs.rm(targetPath, { recursive: true, force: true });
+		}
 	});
 
 	test("restores to a custom target outside protected roots", async () => {

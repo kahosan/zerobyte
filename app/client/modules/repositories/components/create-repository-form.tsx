@@ -51,6 +51,7 @@ const formBaseFields = {
 	name: z.string().min(2).max(32),
 	compressionMode: z.enum(COMPRESSION_MODES).optional(),
 	autoCheckEnabled: z.boolean().default(true),
+	passwordConfirmation: z.string().optional(),
 };
 
 export const formSchema = z
@@ -111,6 +112,9 @@ export const CreateRepositoryForm = ({
 	className,
 }: Props) => {
 	const formDefaultValues = initialValues ?? { autoCheckEnabled: true };
+	const [passwordMode, setPasswordMode] = useState<"default" | "custom">(
+		initialValues?.customPassword ? "custom" : "default",
+	);
 	const getConstants = useServerFn(getServerConstants);
 	const { data: constants } = useSuspenseQuery({
 		queryKey: ["server-constants"],
@@ -118,7 +122,23 @@ export const CreateRepositoryForm = ({
 	});
 
 	const form = useForm<RepositoryFormValues>({
-		resolver: zodResolver(formSchema, undefined, { raw: true }),
+		resolver: zodResolver(
+			formSchema.superRefine((value, ctx) => {
+				if (passwordMode !== "custom" || (mode === "update" && !value.isExistingRepository)) return;
+				if (!value.customPassword) {
+					ctx.addIssue({ code: "custom", message: "Enter a repository password", path: ["customPassword"] });
+				}
+				if (
+					mode === "create" &&
+					!value.isExistingRepository &&
+					value.passwordConfirmation !== value.customPassword
+				) {
+					ctx.addIssue({ code: "custom", message: "Passwords do not match", path: ["passwordConfirmation"] });
+				}
+			}),
+			undefined,
+			{ raw: true },
+		),
 		defaultValues: formDefaultValues,
 		resetOptions: {
 			keepDefaultValues: true,
@@ -132,10 +152,6 @@ export const CreateRepositoryForm = ({
 	const isExisting = useWatch({ control: form.control, name: "isExistingRepository" });
 	const exactPath = mode === "update" || isExisting === true;
 
-	const [passwordMode, setPasswordMode] = useState<"default" | "custom">(
-		initialValues?.customPassword ? "custom" : "default",
-	);
-
 	const { capabilities } = useSystemInfo();
 	const isBackendAllowed = (backend: RepositoryBackend) => capabilities.repositoryBackends.includes(backend);
 	const scrollToFirstError = useScrollToFormError();
@@ -144,7 +160,10 @@ export const CreateRepositoryForm = ({
 		<Form {...form}>
 			<form
 				id={formId}
-				onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)}
+				onSubmit={form.handleSubmit(
+					({ passwordConfirmation: _confirmation, ...values }) => onSubmit(values),
+					scrollToFirstError,
+				)}
 				className={cn("space-y-4", className)}
 			>
 				<FormField
@@ -185,6 +204,7 @@ export const CreateRepositoryForm = ({
 										name: currentValues.name,
 										isExistingRepository: currentValues.isExistingRepository,
 										customPassword: currentValues.customPassword,
+										passwordConfirmation: currentValues.passwordConfirmation,
 										autoCheckEnabled,
 										...backendDefaultValues,
 									};
@@ -282,10 +302,6 @@ export const CreateRepositoryForm = ({
 										checked={field.value}
 										onCheckedChange={(checked) => {
 											field.onChange(checked);
-											if (!checked) {
-												setPasswordMode("default");
-												setValue("customPassword", undefined);
-											}
 										}}
 									/>
 								</FormControl>
@@ -299,13 +315,15 @@ export const CreateRepositoryForm = ({
 						)}
 					/>
 				)}
-				{isExisting && (
+				{(mode === "create" || isExisting) && (
 					<>
 						<FormItem>
-							<FormLabel>Repository Password</FormLabel>
+							<FormLabel>Password source</FormLabel>
 							<Select
 								onValueChange={(value) => {
 									setPasswordMode(value as "default" | "custom");
+									setValue("passwordConfirmation", undefined);
+									form.clearErrors(["customPassword", "passwordConfirmation"]);
 									if (value === "default") {
 										setValue("customPassword", undefined);
 									}
@@ -314,44 +332,81 @@ export const CreateRepositoryForm = ({
 								value={passwordMode}
 							>
 								<FormControl>
-									<SelectTrigger>
+									<SelectTrigger aria-label="Password source">
 										<SelectValue placeholder="Select password option" />
 									</SelectTrigger>
 								</FormControl>
 								<SelectContent>
-									<SelectItem value="default">Use the existing recovery key</SelectItem>
+									<SelectItem value="default">Use organization recovery key</SelectItem>
 									<SelectItem value="custom">Enter password manually</SelectItem>
 								</SelectContent>
 							</Select>
 							<FormDescription>
-								Choose whether to use Zerobyte's recovery key (which you downloaded when creating your
-								account) or enter a custom password for the existing repository.
+								{isExisting
+									? "Choose the password this repository already uses. Updating this setting does not change the repository's encryption password."
+									: "Use your organization's recovery key or set an independent password for this repository."}
 							</FormDescription>
 						</FormItem>
 
 						{passwordMode === "custom" && (
-							<FormField
-								control={form.control}
-								name="customPassword"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Repository Password</FormLabel>
-										<FormControl>
-											<SecretInput
-												placeholder="Enter repository password"
-												value={field.value ?? ""}
-												onChange={field.onChange}
-											/>
-										</FormControl>
-										<FormDescription>
-											The password used to encrypt this repository. It will be stored securely.
-										</FormDescription>
-										<FormMessage />
-									</FormItem>
+							<>
+								<FormField
+									control={form.control}
+									name="customPassword"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Repository Password</FormLabel>
+											<FormControl>
+												<SecretInput
+													placeholder="Enter repository password"
+													autoComplete={isExisting ? "off" : "new-password"}
+													value={field.value ?? ""}
+													onChange={field.onChange}
+												/>
+											</FormControl>
+											<FormDescription>
+												Save this password outside Zerobyte. The organization recovery key
+												cannot unlock a repository that uses an independent password.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								{mode === "create" && !isExisting && (
+									<FormField
+										control={form.control}
+										name="passwordConfirmation"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Confirm repository password</FormLabel>
+												<FormControl>
+													<SecretInput
+														{...field}
+														value={field.value ?? ""}
+														autoComplete="new-password"
+														placeholder="Re-enter repository password"
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
 								)}
-							/>
+							</>
 						)}
 					</>
+				)}
+
+				{mode === "update" && !isExisting && (
+					<FormItem>
+						<FormLabel>Repository Password</FormLabel>
+						<FormDescription>
+							{initialValues?.customPassword
+								? "This repository uses an independent password."
+								: "This repository uses the organization recovery key."}{" "}
+							Changing its encryption password is not supported here.
+						</FormDescription>
+					</FormItem>
 				)}
 
 				{backend === "local" && <LocalRepositoryForm form={form} exactPath={exactPath} />}

@@ -82,7 +82,6 @@ exports[`config transfer payload graph > decodes the historical v1 fixture into 
       "compressionMode": "max",
       "config": {
         "backend": "rclone",
-        "customPassword": "fixture-primary-password",
         "downloadLimit": {
           "enabled": false,
           "unit": "Kbps",

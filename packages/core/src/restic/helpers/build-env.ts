@@ -6,6 +6,7 @@ import type { ResticDeps, ResticEnv } from "../types";
 import type { RepositoryConfig } from "../schemas";
 import { logger } from "../../node";
 import { FILE_MODES, writeFileWithMode } from "../../node/fs.js";
+import { resolveRepositoryPassword } from "./resolve-repository-password";
 
 const createRuntimeSecretsDir = async () => {
 	const runtimeSecretsDir = await fs.mkdtemp(path.join(os.tmpdir(), "zerobyte-restic-"));
@@ -46,23 +47,12 @@ export const buildEnv = async (
 	};
 
 	try {
-		if (config.isExistingRepository && config.customPassword) {
-			const decryptedPassword = await deps.resolveSecret(config.customPassword);
-			const passwordFilePath = await getRuntimeSecretPath(
-				`zerobyte-pass-${crypto.randomBytes(8).toString("hex")}.txt`,
-			);
-
-			await writeFileWithMode(passwordFilePath, decryptedPassword, FILE_MODES.ownerReadWrite);
-			env.RESTIC_PASSWORD_FILE = passwordFilePath;
-		} else {
-			const encryptedPassword = await deps.getOrganizationResticPassword(organizationId);
-			const decryptedPassword = await deps.resolveSecret(encryptedPassword);
-			const passwordFilePath = await getRuntimeSecretPath(
-				`zerobyte-pass-${crypto.randomBytes(8).toString("hex")}.txt`,
-			);
-			await writeFileWithMode(passwordFilePath, decryptedPassword, FILE_MODES.ownerReadWrite);
-			env.RESTIC_PASSWORD_FILE = passwordFilePath;
-		}
+		const password = await resolveRepositoryPassword(config, organizationId, deps);
+		const passwordFilePath = await getRuntimeSecretPath(
+			`zerobyte-pass-${crypto.randomBytes(8).toString("hex")}.txt`,
+		);
+		await writeFileWithMode(passwordFilePath, password, FILE_MODES.ownerReadWrite);
+		env.RESTIC_PASSWORD_FILE = passwordFilePath;
 
 		switch (config.backend) {
 			case "s3":
