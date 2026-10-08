@@ -52,11 +52,6 @@ export function Layout({ loaderData }: Props) {
 							</div>
 							{loaderData.user && (
 								<div className="flex items-center bg-card dark:bg-muted/30 border border-border/80 dark:border-border/50 px-2 py-1 rounded-full shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-sm">
-									{!isDesktop && (
-										<span className="text-sm text-muted-foreground hidden md:inline-flex pl-2 mr-5">
-											<span className="text-foreground">{loaderData.user.name}</span>
-										</span>
-									)}
 									<ThemeToggle />
 									{!isDesktop && (
 										<Tooltip>
@@ -74,24 +69,6 @@ export function Layout({ loaderData }: Props) {
 											<TooltipContent>Logout</TooltipContent>
 										</Tooltip>
 									)}
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<a
-												href="https://github.com/nicotsx/zerobyte/issues/new/choose"
-												target="_blank"
-												rel="noreferrer"
-												className={buttonVariants({
-													variant: "ghost",
-													size: "icon",
-													className:
-														"relative overflow-hidden hidden lg:inline-flex rounded-full h-7 w-7 text-muted-foreground hover:text-foreground",
-												})}
-											>
-												<LifeBuoy className="w-4 h-4" />
-											</a>
-										</TooltipTrigger>
-										<TooltipContent>Report an issue</TooltipContent>
-									</Tooltip>
 								</div>
 							)}
 						</div>
