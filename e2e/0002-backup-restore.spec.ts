@@ -293,7 +293,7 @@ async function importExistingLocalRepository(
 	await page.getByRole("checkbox", { name: "Import existing repository" }).click();
 
 	if (customPassword) {
-		await page.getByRole("combobox").filter({ hasText: "Use the existing recovery key" }).click();
+		await page.getByRole("combobox", { name: "Password source" }).click();
 		await page.getByRole("option", { name: "Enter password manually" }).click();
 		await page.getByPlaceholder("Enter repository password").fill(customPassword);
 	}
