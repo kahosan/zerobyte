@@ -378,17 +378,11 @@ function SidebarItemContent({
 }) {
 	return (
 		<>
-			{active && (
-				<div
-					className={cn("absolute left-0 top-0 h-full w-0.75 bg-strong-accent mr-2", {
-						hidden: isCollapsed,
-					})}
-				/>
-			)}
+			{active && !isCollapsed && <div className="h-5 w-0.75 shrink-0 rounded-full bg-strong-accent" />}
 			<Icon
 				className={cn("transition-[color,margin] duration-200", {
 					"text-strong-accent": active,
-					"ml-1": active && !isCollapsed,
+					"ml-0.5": active && !isCollapsed,
 					"text-muted-foreground": !active,
 				})}
 			/>
